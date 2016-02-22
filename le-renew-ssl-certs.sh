@@ -29,3 +29,5 @@ do
         fi
     fi
 done
+
+service apache2 start
