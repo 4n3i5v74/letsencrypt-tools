@@ -4,15 +4,28 @@
 # Description: it will automatically renew all the certificates
 
 LE=/opt/letsencrypt/letsencrypt-auto
+domainsline=`grep -h domains /etc/letsencrypt/renewal/*`
+
+# Download last version
+$LE --help
 
 service apache2 stop
 
-for f in /etc/letsencrypt/renewal/*conf;
+#internal separator
+IFS=$'\n'
+for domains in $domainsline;
 do
-    filename=$(basename $f);
-    domain=${filename%.*}
-    echo "Renew domain: $domain ..."
-    $LE --renew-by-default --domains $domain certonly
-done
+    domains=`echo ${domains//[[:blank:]]/} | cut -d= -f2`
 
-service apache2 start
+    if [[ $domains != "None" ]];then
+        domain=`echo $domains | cut -d, -f1`
+        more=`echo $domains | cut -d, -f2`
+        if [[ $more == "" ]];then
+            # Single domain, use $domain
+            $LE --renew-by-default certonly --domains $domain
+        else
+            # Multiple domains, use $domains
+            $LE --renew-by-default certonly --domains $domains
+        fi
+    fi
+done
